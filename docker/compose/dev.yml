@@ -10,9 +10,25 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - OTEL_SERVICE_NAME=microts
+      - OTEL_TRACING_ENABLED=true
     volumes:
       - ../../src:/app/src:delegated
     restart: unless-stopped
+    depends_on:
+      - jaeger
+    networks:
+      - microts-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.54
+    container_name: microts-jaeger
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4318:4318"     # OTLP HTTP receiver
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
     networks:
       - microts-network
 

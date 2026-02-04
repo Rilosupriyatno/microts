@@ -73,6 +73,27 @@ podman-compose -f docker/compose/dev.yml down
 podman-compose -f docker/compose/dev.yml restart
 ```
 
+### Rebuild Image (after package.json or Dockerfile changes)
+> ⚠️ **IMPORTANT:** `up` and `restart` do NOT rebuild images!
+> If you change `package.json`, `Dockerfile`, or install new dependencies, you MUST rebuild.
+
+```bash
+# Option 1: Build + up in one command (RECOMMENDED)
+podman-compose -f docker/compose/dev.yml up -d --build
+
+# Option 2: Build separately then up
+podman-compose -f docker/compose/dev.yml build
+podman-compose -f docker/compose/dev.yml up -d
+
+# Option 3: Force rebuild without cache (when package.json changes aren't detected)
+podman-compose -f docker/compose/dev.yml build --no-cache
+podman-compose -f docker/compose/dev.yml up -d
+
+# Option 4: Full reset (stop, rebuild, start)
+podman-compose -f docker/compose/dev.yml down
+podman-compose -f docker/compose/dev.yml up -d --build
+```
+
 ### Check health status
 ```bash
 podman-compose -f docker/compose/dev.yml ps
@@ -241,3 +262,7 @@ podman system prune -a
 - ✅ Production-ready Docker setup
 - ✅ Non-root user in production
 - ✅ Hot reload in development
+- ✅ Request ID tracking (X-Request-Id header)
+- ✅ Correlation ID for cross-service tracing (X-Correlation-Id header)
+- ✅ Prometheus metrics (/metrics endpoint)
+- ✅ Structured logging with Pino

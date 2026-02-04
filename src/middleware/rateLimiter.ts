@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import IORedis from "ioredis";
+import Redis, { type Cluster } from "ioredis";
+import { AppError, ErrorCode } from "../utils/errors";
 
 // Redis Cluster nodes - configuration for all nodes
 const clusterNodes = [
@@ -11,23 +12,22 @@ const clusterNodes = [
   { host: "redis-node-6", port: 6384 },
 ];
 
-let redisCluster: IORedis.Cluster | null = null;
+let redisCluster: Cluster | null = null;
 
 // Lazy-init Redis Cluster connection (don't block startup)
 function getRedisCluster() {
   if (!redisCluster) {
-    redisCluster = new IORedis.Cluster(clusterNodes, {
-      retryStrategy: (times) => {
+    redisCluster = new Redis.Cluster(clusterNodes, {
+      clusterRetryStrategy: (times: number) => {
         const delay = Math.min(times * 50, 2000);
         return delay;
       },
-      maxRetriesPerRequest: 3,
       enableReadyCheck: false,
       enableOfflineQueue: true,
-      lazyConnect: true, // Don't auto-connect, give server time to start
+      lazyConnect: true,
     });
 
-    redisCluster.on("error", (err) => {
+    redisCluster.on("error", (err: Error) => {
       console.warn("[RedisCluster] Connection error:", err.message);
     });
 
@@ -44,7 +44,7 @@ function getRedisCluster() {
     });
 
     // Try to connect in background (non-blocking)
-    redisCluster.connect().catch((err) => {
+    redisCluster.connect().catch((err: Error) => {
       console.warn("[RedisCluster] Initial connection failed (will retry):", err.message);
     });
   }
@@ -66,7 +66,11 @@ export function rateLimiter(options?: { windowSeconds?: number; max?: number }) 
       }
       if (current > max) {
         res.setHeader("Retry-After", String(windowSeconds));
-        return res.status(429).json({ error: "Too many requests" });
+        return next(new AppError("Too many requests", 429, ErrorCode.RATE_LIMIT_EXCEEDED, {
+          retryAfter: windowSeconds,
+          limit: max,
+          current
+        }));
       }
       return next();
     } catch (err) {
@@ -78,3 +82,4 @@ export function rateLimiter(options?: { windowSeconds?: number; max?: number }) 
 }
 
 export default getRedisCluster;
+

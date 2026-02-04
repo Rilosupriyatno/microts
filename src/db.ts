@@ -4,6 +4,7 @@ const connectionString = process.env.DATABASE_URL || `postgresql://postgres:pass
 
 export const pool = new Pool({
   connectionString,
+  statement_timeout: parseInt(process.env.DB_QUERY_TIMEOUT || "10000", 10), // Default 10s
 });
 
 let dbReady = false;
