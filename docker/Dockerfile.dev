@@ -1,5 +1,8 @@
 FROM oven/bun:1-alpine
 
+# Install build dependencies for native modules (like bcrypt)
+RUN apk add --no-cache python3 make g++ gcc build-base
+
 WORKDIR /app
 
 # Copy package files

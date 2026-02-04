@@ -12,10 +12,11 @@ import correlationIdMiddleware, { getCorrelationId } from "./middleware/correlat
 import { metricsMiddleware, metricsHandler } from "./middleware/metrics";
 import authRouter, { authenticate } from "./auth";
 import { rateLimiter } from "./middleware/rateLimiter";
-import { initDb, isDatabaseReady } from "./db";
+import { initDb, isDatabaseReady, query } from "./db";
 import timeout from "connect-timeout";
 import errorHandler from "./middleware/errorHandler";
 import { NotFoundError } from "./utils/errors";
+import swaggerRouter from "./middleware/swagger";
 
 const logger = pino({
   level: process.env.LOG_LEVEL || "info",
@@ -61,7 +62,29 @@ app.use(metricsMiddleware);
 // Rate limiter (global)
 app.use(rateLimiter({ windowSeconds: 60, max: 60 }));
 
+// Stricter rate limiter for Authentication (prevent brute force)
+const authRateLimiter = rateLimiter({ windowSeconds: 15 * 60, max: 5 });
+
 // Health check endpoint
+/**
+ * @openapi
+ * /health:
+ *   get:
+ *     summary: Health check
+ *     description: Returns the health status of the microservice.
+ *     tags: [Infrastructure]
+ *     responses:
+ *       200:
+ *         description: Service is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status: { type: string, example: ok }
+ *                 timestamp: { type: string, format: date-time }
+ *                 environment: { type: string, example: development }
+ */
 app.get("/health", (req, res) => {
   req.log.debug("Health check endpoint called");
   res.status(200).json({
@@ -72,6 +95,19 @@ app.get("/health", (req, res) => {
 });
 
 // Ready check endpoint - reports readiness including DB
+/**
+ * @openapi
+ * /ready:
+ *   get:
+ *     summary: Readiness check
+ *     description: Reports service readiness, including database connectivity.
+ *     tags: [Infrastructure]
+ *     responses:
+ *       200:
+ *         description: Service is ready
+ *       503:
+ *         description: Service is not ready (e.g., DB disconnected)
+ */
 app.get("/ready", (req, res) => {
   req.log.debug("Ready check endpoint called");
   const ready = isDatabaseReady();
@@ -83,6 +119,17 @@ app.get("/ready", (req, res) => {
 });
 
 // Metrics endpoint (Prometheus)
+/**
+ * @openapi
+ * /metrics:
+ *   get:
+ *     summary: Prometheus metrics
+ *     description: Exposes metrics for Prometheus monitoring.
+ *     tags: [Infrastructure]
+ *     responses:
+ *       200:
+ *         description: Prometheus metrics in text format
+ */
 app.get("/metrics", metricsHandler);
 
 // API Routes
@@ -101,6 +148,17 @@ app.get("/api", (req, res) => {
 });
 
 // Test routes for timeout
+/**
+ * @openapi
+ * /test/slow:
+ *   get:
+ *     summary: Test slow request
+ *     description: Simulates a slow operation that takes 35s (will trigger default 30s timeout).
+ *     tags: [Testing]
+ *     responses:
+ *       500:
+ *         description: Timeout error
+ */
 app.get("/test/slow", (req, res) => {
   req.log.info("Slow request started");
   // Delay longer than default 30s
@@ -120,10 +178,62 @@ app.get("/test/timeout-override", timeout("1000"), (req, res) => {
   }, 2000);
 });
 
+// Test route for DB Circuit Breaker
+/**
+ * @openapi
+ * /test/db:
+ *   get:
+ *     summary: Test DB connection with Circuit Breaker
+ *     description: Checks DB connection using the circuit breaker protected query.
+ *     tags: [Testing]
+ *     responses:
+ *       200:
+ *         description: Database is connected
+ *       503:
+ *         description: Circuit is open or DB is down
+ */
+app.get("/test/db", async (req, res, next) => {
+  try {
+    const result = await query("SELECT NOW()");
+    res.json({ status: "success", data: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Test route for Redis Circuit Breaker (uses rate limiter)
+app.get("/test/redis-limiter", rateLimiter({ max: 100 }), (req, res) => {
+  res.json({ status: "success", message: "Rate limiter check passed" });
+});
+
 // Auth routes
-app.use("/auth", authRouter);
+app.use("/auth", authRateLimiter, authRouter);
+
+// API Documentation
+app.use("/docs", swaggerRouter);
 
 // Example protected route
+/**
+ * @openapi
+ * /me:
+ *   get:
+ *     summary: Get current user profile
+ *     description: Returns profile of the currently authenticated user.
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user: { $ref: '#/components/schemas/User' }
+ *       401:
+ *         description: Unauthorized
+ */
 app.get("/me", authenticate, async (req, res) => {
   const user = (req as any).user;
   res.json({ user });

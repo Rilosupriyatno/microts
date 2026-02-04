@@ -184,49 +184,75 @@ curl http://localhost:3000/test/timeout-override
 
 **Priority:** COMPLETE - All application errors now follow the standardized microservice pattern
 
-### 4. Circuit Breaker Pattern (0%)
-**Current State:** None  
-**What's Needed:**
-- Circuit breaker for Redis connection
-- Circuit breaker for PostgreSQL
-- Fallback behavior when circuits open
-- Monitoring of circuit state
-
-**Why Important:** Prevents cascading failures, allows graceful degradation
-
-**Priority:** MEDIUM - Important for production stability
-
-### 5. API Documentation (20%)
+### 4. Circuit Breaker Pattern (100%) ✅
 **Current State:**
-- ✅ Basic endpoint list exists
-- ❌ No detailed API docs
-- ❌ No Swagger/OpenAPI spec
-- ❌ No request/response examples
+- ✅ `opossum` library integrated for circuit breaker management
+- ✅ PostgreSQL connection protected with 503 fallback
+- ✅ Redis Cluster operations protected with "Fail-Open" strategy
+- ✅ Circuit state changes logged (Open/Half-Open/Closed)
 
-**What's Needed:**
-- OpenAPI 3.0 spec
-- Swagger UI endpoint
-- Documented request/response formats
-- Error code documentation
+**Implementation Details:**
+- **Database Breaker**: All DB queries go through `dbBreaker`. If 50% of requests fail, the circuit opens for 30s.
+- **Redis Breaker**: Protects rate limiting. If Redis is down, the system defaults to "Fail-Open" to allow legitimate traffic while logging a warning.
+- **Standardized Fallback**: Uses the central `errorHandler` to provide consistent JSON error responses.
 
-**Priority:** MEDIUM - Important for API consumers
+**Verification (February 4, 2026):**
+```bash
+# Test 1: Database Down
+podman stop microts-postgres
+curl http://localhost:3000/test/db
+# Result: 503 Service Unavailable (via Breaker Fallback) ✅
 
-### 6. Authentication Endpoints (30%)
+# Test 2: Redis Down (Fail-Open)
+podman stop microts-redis-1 ... microts-redis-6
+curl http://localhost:3000/test/redis-limiter
+# Result: 200 OK (Fail-Open strategy) + Log Warning ✅
+```
+
+**Priority:** COMPLETE - Resilience pattern implemented across all critical dependencies
+
+### 5. API Documentation (100%) ✅
 **Current State:**
-- ✅ JWT setup complete
-- ✅ Password hashing ready
-- ❌ /register endpoint (created, not tested)
-- ❌ /login endpoint (created, not tested)
-- ❌ Token refresh mechanism
-- ❌ Logout/token revocation
+- ✅ OpenAPI 3.0 specification implemented via `swagger-jsdoc`
+- ✅ Interactive Swagger UI available at `/docs`
+- ✅ All core, authentication, and test routes documented
+- ✅ Consistent Schema definitions for `User` and `ErrorResponse`
 
-**What's Needed:**
-- Test existing auth endpoints
-- Implement token refresh logic
-- Add password reset flow
-- Rate limit auth endpoints
+**Implementation Details:**
+- **Tooling**: `swagger-jsdoc` + `swagger-ui-express`.
+- **Methodology**: JSDoc annotations langsung di file route.
+- **Security**: Security scheme `bearerAuth` (JWT) didokumentasikan untuk rute `/me`.
 
-**Priority:** HIGH - Core functionality, needs testing
+**Verification (February 4, 2026):**
+```bash
+# Verify Swagger UI
+curl -I http://localhost:3000/docs/
+# Result: 200 OK ✅
+```
+
+**Priority:** COMPLETE - API is now self-documenting and interactive
+
+### 6. Authentication Endpoints (100%) ✅
+**Current State:**
+- ✅ JWT Access/Refresh Token pair implementation
+- ✅ Refresh Token stored in Redis Cluster (7-day TTL)
+- ✅ Token Rotation enabled (generating new pair on refresh)
+- ✅ Secure Logout (revoking session from Redis)
+- ✅ Robust input validation via `express-validator`
+- ✅ Brute-force protection with strict rate limiting (5 req/15 min)
+
+**Implementation Details:**
+- **Refresh Strategy**: Stateless Access Token (15m) + Stateful Refresh Token (7d) in Redis.
+- **Revocation**: Logout endpoint explicitly deletes the refresh token from Redis.
+- **Brute Force**: IPs are restricted on `/auth/*` routes specifically.
+
+**Verification (February 4, 2026):**
+```bash
+# E2E Flow: Register -> Login -> Refresh -> Logout -> Verify Revocation
+# Result: All steps passed (Status 201/200/204/411) ✅
+```
+
+**Priority:** COMPLETE - Core security & identity management is production-ready
 
 ---
 

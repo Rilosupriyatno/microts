@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { query } from "../db";
 
 export type User = {
   id: number;
@@ -8,7 +8,7 @@ export type User = {
 };
 
 export async function createUser(email: string, passwordHash: string) {
-  const res = await pool.query(
+  const res = await query(
     `INSERT INTO "users" (email, password_hash) VALUES ($1, $2) RETURNING id, email, created_at`,
     [email, passwordHash]
   );
@@ -16,13 +16,13 @@ export async function createUser(email: string, passwordHash: string) {
 }
 
 export async function getUserByEmail(email: string) {
-  const res = await pool.query(`SELECT id, email, password_hash, created_at FROM "users" WHERE email = $1`, [
+  const res = await query(`SELECT id, email, password_hash, created_at FROM "users" WHERE email = $1`, [
     email,
   ]);
   return res.rows[0] as User | undefined;
 }
 
 export async function getUserById(id: number) {
-  const res = await pool.query(`SELECT id, email, created_at FROM "users" WHERE id = $1`, [id]);
+  const res = await query(`SELECT id, email, created_at FROM "users" WHERE id = $1`, [id]);
   return res.rows[0] as User | undefined;
 }

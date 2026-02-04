@@ -1,4 +1,6 @@
-import { Pool } from "pg";
+import { Pool, type QueryResult, type QueryConfig } from "pg";
+import { createCircuitBreaker } from "./utils/circuitBreaker";
+import { AppError, ErrorCode } from "./utils/errors";
 
 const connectionString = process.env.DATABASE_URL || `postgresql://postgres:password@postgres:5432/microts`;
 
@@ -46,5 +48,31 @@ export async function initDb(maxRetries = Number(process.env.DB_INIT_MAX_RETRIES
 export function isDatabaseReady() {
   return dbReady;
 }
+
+/**
+ * Protected query function using Circuit Breaker
+ */
+const dbBreaker = createCircuitBreaker(
+  async (queryTextOrConfig: string | QueryConfig, values?: any[]): Promise<QueryResult> => {
+    return pool.query(queryTextOrConfig, values);
+  },
+  {
+    name: "postgresql",
+    timeout: 5000,
+    errorThresholdPercentage: 50,
+    resetTimeout: 30000,
+  }
+);
+
+// Fallback behavior when circuit is open
+dbBreaker.fallback(() => {
+  throw new AppError(
+    "Database service is currently unavailable. Please try again later.",
+    503,
+    ErrorCode.SERVICE_UNAVAILABLE
+  );
+});
+
+export const query = (queryText: string, values?: any[]) => dbBreaker.fire(queryText, values);
 
 export default pool;
