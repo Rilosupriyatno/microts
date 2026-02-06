@@ -1,6 +1,8 @@
 // IMPORTANT: Tracing must be initialized BEFORE any other imports
 import { initTracing } from "./tracing";
-initTracing();
+if (process.env.NODE_ENV !== "test") {
+  initTracing();
+}
 
 import express from "express";
 import { Server } from "http";
@@ -14,6 +16,8 @@ import authRouter, { authenticate } from "./auth";
 import { rateLimiter } from "./middleware/rateLimiter";
 import { initDb, isDatabaseReady, query } from "./db";
 import timeout from "connect-timeout";
+import helmet from "helmet";
+import cors from "cors";
 import errorHandler from "./middleware/errorHandler";
 import { NotFoundError } from "./utils/errors";
 import swaggerRouter from "./middleware/swagger";
@@ -37,9 +41,18 @@ let server: Server | null = null;
 const PORT = parseInt(process.env.PORT || "3000", 10);
 const ENV = process.env.NODE_ENV || "development";
 
+// Security Middleware
+app.use(helmet());
+app.use(
+  cors({
+    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : ["http://localhost:3000"],
+    credentials: true,
+  })
+);
+
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(timeout(process.env.REQUEST_TIMEOUT || "30000"));
 
 // Request ID and Correlation ID: generate IDs and attach to logs
@@ -291,6 +304,8 @@ async function start() {
   });
 }
 
-start();
+if (process.env.NODE_ENV !== "test") {
+  start();
+}
 
-export default app;
+export { app };

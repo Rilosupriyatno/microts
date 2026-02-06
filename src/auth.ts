@@ -6,6 +6,8 @@ import { createUser, getUserByEmail } from "./models/user";
 import { AppError, ConflictError, UnauthorizedError, ValidationError } from "./utils/errors";
 import { generateTokenPair, verifyRefreshToken } from "./utils/auth";
 import { removeRefreshToken, getStoredRefreshToken } from "./utils/redis";
+import { validate } from "./middleware/validate";
+import { registerSchema, loginSchema, refreshSchema } from "./schemas/user.schema";
 
 const router = express.Router();
 
@@ -46,16 +48,9 @@ const jwtSecret = process.env.JWT_SECRET || "dev-secret";
  */
 router.post(
   "/register",
-  [
-    body("email").isEmail().withMessage("Invalid email format").normalizeEmail(),
-    body("password").isLength({ min: 8 }).withMessage("Password must be at least 8 characters"),
-  ],
+  validate(registerSchema),
   async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        throw new ValidationError(errors.array()[0]!.msg);
-      }
 
       const { email, password } = req.body;
       // check existing
@@ -112,16 +107,9 @@ router.post(
  */
 router.post(
   "/login",
-  [
-    body("email").isEmail().withMessage("Missing or invalid email").normalizeEmail(),
-    body("password").notEmpty().withMessage("Password is required"),
-  ],
+  validate(loginSchema),
   async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        throw new ValidationError(errors.array()[0]!.msg);
-      }
 
       const { email, password } = req.body;
       const user = await getUserByEmail(email);
@@ -170,12 +158,9 @@ router.post(
  *       401:
  *         description: Invalid or expired refresh token
  */
-router.post("/refresh", async (req, res, next) => {
+router.post("/refresh", validate(refreshSchema), async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
-    if (!refreshToken) {
-      throw new ValidationError("Refresh token is required");
-    }
 
     const payload = verifyRefreshToken(refreshToken);
     const stored = await getStoredRefreshToken(payload.sub);
