@@ -1,8 +1,8 @@
-import { expect, test, describe, mock, beforeAll } from "bun:test";
-import request from "supertest";
-import { app } from "./index";
+import { expect, test, describe, mock } from "bun:test";
 
-// Mock Database and Redis
+const mockUser = { id: 1, email: "test@example.com" };
+
+// Mocking must happen BEFORE imports
 mock.module("./db", () => ({
     query: mock(() => Promise.resolve({ rows: [], rowCount: 0 })),
     initDb: mock(() => Promise.resolve()),
@@ -14,16 +14,36 @@ mock.module("./utils/redis", () => ({
     removeRefreshToken: mock(() => Promise.resolve()),
 }));
 
-// Mock Models
 mock.module("./models/user", () => ({
-    createUser: mock(() => Promise.resolve({ id: 1, email: "test@example.com" })),
+    createUser: mock(() => Promise.resolve(mockUser)),
     getUserByEmail: mock((email: string) => {
-        if (email === "existing@example.com") {
-            return Promise.resolve({ id: 2, email: "existing@example.com", password_hash: "hashed" });
+        if (email === "existing@example.com" || email === "test@example.com") {
+            return Promise.resolve({ ...mockUser, password_hash: "hashed" });
         }
         return Promise.resolve(null);
     }),
 }));
+
+mock.module("jsonwebtoken", () => ({
+    default: {
+        verify: mock(() => ({ sub: 1, email: "test@example.com" })),
+        sign: mock(() => "mocked-jwt-token"),
+    },
+    verify: mock(() => ({ sub: 1, email: "test@example.com" })),
+    sign: mock(() => "mocked-jwt-token"),
+}));
+
+mock.module("bcrypt", () => ({
+    default: {
+        compare: mock(() => Promise.resolve(true)),
+        hash: mock(() => Promise.resolve("hashed")),
+    },
+    compare: mock(() => Promise.resolve(true)),
+    hash: mock(() => Promise.resolve("hashed")),
+}));
+
+import request from "supertest";
+import { app } from "./index";
 
 describe("Auth Integration Tests", () => {
     describe("POST /auth/register", () => {
@@ -78,6 +98,47 @@ describe("Auth Integration Tests", () => {
 
             expect(response.status).toBe(411);
             expect(response.body.error.code).toBe("UNAUTHORIZED");
+        });
+
+        test("should login successfully with valid credentials", async () => {
+            const response = await request(app)
+                .post("/auth/login")
+                .send({
+                    email: "test@example.com",
+                    password: "password123"
+                });
+
+            expect(response.status).toBe(200);
+            expect(response.body).toHaveProperty("accessToken");
+            expect(response.body).toHaveProperty("refreshToken");
+        });
+    });
+
+    describe("GET /me", () => {
+        test("should return user profile for authenticated user", async () => {
+            const response = await request(app)
+                .get("/me")
+                .set("Authorization", "Bearer mocked-token");
+
+            expect(response.status).toBe(200);
+            expect(response.body.user).toHaveProperty("email", "test@example.com");
+        });
+
+        test("should return 411 when no token is provided", async () => {
+            const response = await request(app)
+                .get("/me");
+
+            expect(response.status).toBe(411);
+        });
+    });
+
+    describe("POST /auth/logout", () => {
+        test("should logout successfully", async () => {
+            const response = await request(app)
+                .post("/auth/logout")
+                .set("Authorization", "Bearer mocked-token");
+
+            expect(response.status).toBe(204);
         });
     });
 });

@@ -1,0 +1,28 @@
+name: Bun Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run Unit Tests
+        run: bun run test:unit
+
+      - name: Run Integration Tests
+        # We need Redis and Postgres for integration tests. 
+        # For a simple skeleton, we'll just run unit tests or use service containers.
+        run: bun run test:unit

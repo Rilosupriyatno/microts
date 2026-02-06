@@ -4,22 +4,30 @@ I have implemented a comprehensive automated testing suite using **Bun's built-i
 
 ## 🚀 Cara Penggunaan (Usage Guide)
 
-### 1. Menjalankan Semua Test
-Gunakan perintah berikut untuk menjalankan unit, integration, dan flow tests:
+### 1. Menjalankan Semua Test (Urutan: Unit -> Integration -> E2E)
+Gunakan perintah berikut untuk menjalankan seluruh rangkaian test secara sekuensial:
 ```bash
-bun test
+bun run test:all
 ```
 
-### 2. Cek Coverage (Laporan Cakupan Kode)
-Untuk melihat seberapa banyak kode yang sudah tercover oleh test:
+### 2. Menjalankan Unit Tests Saja
+```bash
+bun run test:unit
+```
+
+### 3. Menjalankan Integration Tests Saja
+```bash
+bun run test:integration
+```
+
+### 4. Cek Coverage (Laporan Cakupan Kode)
 ```bash
 bun test --coverage
 ```
 
-### 3. Menjalankan E2E Flow Test Secara Spesifik
-Jika ingin mengetes lifecycle user secara lengkap (Register -> Login -> Profile -> Refresh -> Logout):
+### 5. Menjalankan E2E Flow Test Secara Spesifik
 ```bash
-npm run test:e2e  # atau bun test src/*.flow.test.ts
+bun run test:e2e
 ```
 
 ### 4. Load Testing (Benchmarking)
