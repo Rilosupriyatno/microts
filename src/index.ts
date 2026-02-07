@@ -288,10 +288,12 @@ async function start() {
   });
 
   // Graceful shutdown handlers
-  process.on("SIGTERM", () => {
+  process.on("SIGTERM", async () => {
     logger.info("SIGTERM received, shutting down gracefully...");
     if (server) {
-      server.close(() => {
+      server.close(async () => {
+        const { closePool } = await import("./db");
+        await closePool();
         logger.info("Server closed");
         process.exit(0);
       });
@@ -300,10 +302,12 @@ async function start() {
     }
   });
 
-  process.on("SIGINT", () => {
+  process.on("SIGINT", async () => {
     logger.info("SIGINT received, shutting down gracefully...");
     if (server) {
-      server.close(() => {
+      server.close(async () => {
+        const { closePool } = await import("./db");
+        await closePool();
         logger.info("Server closed");
         process.exit(0);
       });

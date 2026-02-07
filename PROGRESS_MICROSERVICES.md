@@ -99,7 +99,7 @@
 
 ---
 
-## ❌ NOT STARTED (5 items)
+## ❌ NOT STARTED (4 items)
 
 ### 1. Database Migrations
 - No formal migration tool (e.g., Knex)
@@ -109,15 +109,7 @@
 **Effort:** 3-4 hours  
 **Priority:** HIGH (before production)
 
-### 2. Database Connection Pool Management
-- Pool settings hardcoded (10 connections)
-- No pool monitoring
-- No graceful connection draining on shutdown
-
-**Effort:** 1-2 hours  
-**Priority:** MEDIUM
-
-### 3. Rate Limiting Enhancements
+### 2. Rate Limiting Enhancements
 - Only per-IP (no per-user limiting)
 - No endpoint-specific limits (except auth ✅)
 - No sliding window algorithm
