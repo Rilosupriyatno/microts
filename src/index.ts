@@ -13,6 +13,8 @@ import requestIdMiddleware from "./middleware/requestId";
 import correlationIdMiddleware, { getCorrelationId } from "./middleware/correlationId";
 import { metricsMiddleware, metricsHandler } from "./middleware/metrics";
 import authRouter from "./routes/auth.routes";
+import alertRouter from "./routes/alert.routes";
+import statusRouter from "./routes/status.routes";
 import { authenticate } from "./middleware/auth";
 import { rateLimiter } from "./middleware/rateLimiter";
 import { initDb, isDatabaseReady, query } from "./db";
@@ -222,6 +224,12 @@ app.get("/test/redis-limiter", rateLimiter({ max: 100 }), (req, res) => {
 
 // Auth routes
 app.use("/auth", authRateLimiter, authRouter);
+
+// Alert routes (webhook receiver)
+app.use("/alerts", alertRouter);
+
+// Status page
+app.use("/status", statusRouter);
 
 // API Documentation
 app.use("/docs", swaggerRouter);

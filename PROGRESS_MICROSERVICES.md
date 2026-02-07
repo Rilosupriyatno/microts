@@ -99,7 +99,7 @@
 
 ---
 
-## ❌ NOT STARTED (8 items)
+## ❌ NOT STARTED (5 items)
 
 ### 1. Database Migrations
 - No formal migration tool (e.g., Knex)
@@ -119,20 +119,13 @@
 
 ### 3. Rate Limiting Enhancements
 - Only per-IP (no per-user limiting)
-- No endpoint-specific limits
+- No endpoint-specific limits (except auth ✅)
 - No sliding window algorithm
 
 **Effort:** 2-3 hours  
 **Priority:** MEDIUM
 
-### 4. Advanced Security Hardening
-- No HTTPS/TLS setup (infrastructure level)
-- No specialized rate limiting on auth endpoints (beyond global)
-
-**Effort:** 2-3 hours  
-**Priority:** MEDIUM
-
-### 5. Caching Strategy
+### 4. Caching Strategy
 - No HTTP caching headers
 - No Redis cache for frequent queries
 - No cache invalidation strategy
@@ -140,24 +133,7 @@
 **Effort:** 3-4 hours  
 **Priority:** MEDIUM
 
-### 6. Monitoring & Alerting
-- No health check integration with orchestrators
-- No metrics scraping
-- No alerts/notifications
-- No uptime tracking
-
-**Effort:** 4-5 hours  
-**Priority:** MEDIUM-HIGH
-
-### 7. Dependency Injection / Config Management
-- No DI container
-- Config scattered across files
-- No environment variable validation
-
-**Effort:** 2-3 hours  
-**Priority:** LOW (refactoring)
-
-### 8. Production Deployment Guide
+### 5. Production Deployment Guide
 - No deployment playbook
 - No rollback strategy
 - No blue-green deployment setup
@@ -165,6 +141,38 @@
 
 **Effort:** 4-5 hours  
 **Priority:** HIGH (for operations)
+
+---
+
+## 🟡 PARTIALLY COMPLETED (3 items)
+
+### 1. Advanced Security Hardening
+**Completed:**
+- ✅ Helmet.js for HTTP security headers
+- ✅ CORS configuration
+- ✅ Auth endpoint rate limiting (5 req/15min)
+
+**Remaining:**
+- ❌ HTTPS/TLS setup (infrastructure level)
+
+### 2. Monitoring & Alerting ✅
+**Completed:**
+- ✅ Health check endpoint (`/health`)
+- ✅ Readiness endpoint (`/ready`)
+- ✅ Prometheus metrics endpoint (`/metrics`)
+- ✅ Request duration histogram
+- ✅ Request counter by method/route/status
+- ✅ Error counter by type
+- ✅ Active connections gauge
+- ✅ Alerting/notifications integration (`POST /alerts/webhook`)
+- ✅ Uptime tracking (`GET /status`, `process_uptime_seconds` gauge)
+
+### 3. Config Management ✅
+**Completed:**
+- ✅ Centralized config (`src/config/index.ts`)
+- ✅ Environment variable organization
+- ✅ Environment variable validation (Zod) - `src/config/env.schema.ts`
+- ✅ DI container - `src/container.ts`
 
 ---
 

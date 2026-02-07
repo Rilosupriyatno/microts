@@ -1,57 +1,134 @@
 /**
  * Centralized configuration for the microservice
- * All environment variables and settings are managed here
+ * Uses Zod-validated environment variables for type safety
  */
 
+import { validateEnv, type EnvConfig } from "./env.schema";
+
+// Validate environment on first import
+let _env: EnvConfig | null = null;
+
+function getEnv(): EnvConfig {
+    if (!_env) {
+        _env = validateEnv();
+    }
+    return _env;
+}
+
+// Lazy-loaded validated config
 export const config = {
+    get env() {
+        return getEnv();
+    },
+
     // Application
-    port: parseInt(process.env.PORT || "3000", 10),
-    env: process.env.NODE_ENV || "development",
-    logLevel: process.env.LOG_LEVEL || "info",
+    get port() {
+        return getEnv().PORT;
+    },
+    get nodeEnv() {
+        return getEnv().NODE_ENV;
+    },
+    get logLevel() {
+        return getEnv().LOG_LEVEL;
+    },
 
     // JWT
     jwt: {
-        secret: process.env.JWT_SECRET || "dev-secret",
-        refreshSecret: process.env.JWT_REFRESH_SECRET || "dev-refresh-secret",
-        accessExpiresIn: process.env.JWT_ACCESS_EXPIRES || "15m",
-        refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES || "7d",
+        get secret() {
+            return getEnv().JWT_SECRET;
+        },
+        get refreshSecret() {
+            return getEnv().JWT_REFRESH_SECRET;
+        },
+        get accessExpiresIn() {
+            return getEnv().JWT_ACCESS_EXPIRES;
+        },
+        get refreshExpiresIn() {
+            return getEnv().JWT_REFRESH_EXPIRES;
+        },
     },
 
     // Database
     db: {
-        host: process.env.DB_HOST || "localhost",
-        port: parseInt(process.env.DB_PORT || "5432", 10),
-        user: process.env.DB_USER || "postgres",
-        password: process.env.DB_PASSWORD || "postgres",
-        database: process.env.DB_NAME || "microts",
-        maxConnections: parseInt(process.env.DB_POOL_SIZE || "10", 10),
+        get host() {
+            return getEnv().DB_HOST;
+        },
+        get port() {
+            return getEnv().DB_PORT;
+        },
+        get user() {
+            return getEnv().DB_USER;
+        },
+        get password() {
+            return getEnv().DB_PASSWORD;
+        },
+        get database() {
+            return getEnv().DB_NAME;
+        },
+        get maxConnections() {
+            return getEnv().DB_POOL_SIZE;
+        },
+        get queryTimeout() {
+            return getEnv().DB_QUERY_TIMEOUT;
+        },
+        get connectionUrl() {
+            return getEnv().DATABASE_URL;
+        },
     },
 
     // Redis
     redis: {
-        host: process.env.REDIS_HOST || "localhost",
-        port: parseInt(process.env.REDIS_PORT || "6379", 10),
-        password: process.env.REDIS_PASSWORD,
-        clusterMode: process.env.REDIS_CLUSTER === "true",
-        clusterNodes: process.env.REDIS_CLUSTER_NODES?.split(",") || [],
+        get host() {
+            return getEnv().REDIS_HOST;
+        },
+        get port() {
+            return getEnv().REDIS_PORT;
+        },
+        get password() {
+            return getEnv().REDIS_PASSWORD;
+        },
+        get clusterMode() {
+            return getEnv().REDIS_CLUSTER === "true";
+        },
+        get clusterNodes() {
+            return getEnv().REDIS_CLUSTER_NODES?.split(",") || [];
+        },
     },
 
     // Rate Limiting
     rateLimit: {
-        windowSeconds: parseInt(process.env.RATE_LIMIT_WINDOW || "60", 10),
-        maxRequests: parseInt(process.env.RATE_LIMIT_MAX || "60", 10),
+        get windowSeconds() {
+            return getEnv().RATE_LIMIT_WINDOW;
+        },
+        get maxRequests() {
+            return getEnv().RATE_LIMIT_MAX;
+        },
     },
 
     // CORS
     cors: {
-        allowedOrigins: process.env.ALLOWED_ORIGINS?.split(",") || ["http://localhost:3000"],
+        get allowedOrigins() {
+            return getEnv().ALLOWED_ORIGINS.split(",");
+        },
     },
 
     // Request
     request: {
-        timeout: process.env.REQUEST_TIMEOUT || "30000",
+        get timeout() {
+            return getEnv().REQUEST_TIMEOUT;
+        },
         bodySizeLimit: "10kb",
     },
-} as const;
+
+    // Alerting
+    alerting: {
+        get enabled() {
+            return getEnv().ALERTING_ENABLED === "true";
+        },
+        get webhookUrl() {
+            return getEnv().ALERT_WEBHOOK_URL;
+        },
+    },
+};
 
 export default config;

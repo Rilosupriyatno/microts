@@ -32,10 +32,33 @@ const activeConnections = new client.Gauge({
   help: "Number of active HTTP connections",
 });
 
+// Uptime tracking
+const serverStartTime = Date.now();
+
+const processUptimeSeconds = new client.Gauge({
+  name: "process_uptime_seconds",
+  help: "Process uptime in seconds",
+});
+
+const httpServerStartTime = new client.Gauge({
+  name: "http_server_start_time",
+  help: "Unix timestamp when the HTTP server started",
+});
+
+// Set server start time immediately
+httpServerStartTime.set(Math.floor(serverStartTime / 1000));
+
+// Update uptime every second
+setInterval(() => {
+  processUptimeSeconds.set(Math.floor((Date.now() - serverStartTime) / 1000));
+}, 1000);
+
 register.registerMetric(httpRequestDuration);
 register.registerMetric(httpRequestCount);
 register.registerMetric(httpErrorCount);
 register.registerMetric(activeConnections);
+register.registerMetric(processUptimeSeconds);
+register.registerMetric(httpServerStartTime);
 
 /**
  * Categorize HTTP status code into error type
