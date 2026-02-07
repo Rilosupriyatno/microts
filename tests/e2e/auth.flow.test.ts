@@ -6,12 +6,12 @@ process.env.JWT_SECRET = "test-secret-123";
 process.env.REFRESH_SECRET = "test-refresh-secret-123";
 
 // 2. MOCK ALL MODULES BEFORE ANY IMPORTS
-mock.module("./db", () => ({
+mock.module("../../src/db", () => ({
     query: mock(() => Promise.resolve({ rows: [], rowCount: 0 })),
     initDb: mock(() => Promise.resolve()),
 }));
 
-mock.module("./utils/redis", () => {
+mock.module("../../src/utils/redis", () => {
     let store: Record<string, string> = {};
     return {
         storeRefreshToken: mock((userId: number, token: string) => {
@@ -32,7 +32,7 @@ mock.module("./utils/redis", () => {
     };
 });
 
-mock.module("./models/user", () => {
+mock.module("../../src/models/user", () => {
     const users: any[] = [{ id: 1, email: "test@example.com", password_hash: "hashed" }];
     return {
         createUser: mock((email: string, passwordHash: string) => {
@@ -69,7 +69,7 @@ mock.module("bcrypt", () => ({
 
 // 3. NOW IMPORT APPLICATION CODE
 import request from "supertest";
-import { app } from "./index";
+import { app } from "../../src/index";
 
 describe("User Lifecycle E2E Flow", () => {
     let accessToken: string;

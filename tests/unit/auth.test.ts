@@ -1,9 +1,9 @@
 import { expect, test, describe, mock } from "bun:test";
-import { generateTokenPair, verifyRefreshToken } from "./auth";
-import * as redis from "./redis";
+import { generateTokenPair, verifyRefreshToken } from "../../src/utils/auth";
+import * as redis from "../../src/utils/redis";
 
 // Mock redis module
-mock.module("./redis", () => ({
+mock.module("../../src/utils/redis", () => ({
     storeRefreshToken: mock(() => Promise.resolve()),
 }));
 

@@ -8,7 +8,7 @@ import {
     NotFoundError,
     ConflictError,
     ErrorCode
-} from "./errors";
+} from "../../src/utils/errors";
 
 describe("Error Utils", () => {
     test("AppError should have correct properties", () => {

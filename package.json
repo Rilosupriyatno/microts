@@ -12,9 +12,9 @@
     "lint": "eslint src/",
     "type-check": "tsc --noEmit",
     "test": "bun test",
-    "test:unit": "bun test src/utils/auth.test.ts && bun test src/utils/redis.test.ts && bun test src/utils/circuitBreaker.test.ts src/utils/errors.test.ts",
-    "test:integration": "bun test src/auth.integration.test.ts",
-    "test:e2e": "bun test src/auth.flow.test.ts",
+    "test:unit": "bun test tests/unit/",
+    "test:integration": "bun test tests/integration/",
+    "test:e2e": "bun test tests/e2e/",
     "test:all": "bun run test:unit && bun run test:integration && bun run test:e2e",
     "test:coverage": "bun test --coverage",
     "test:load": "k6 run scripts/load-test.js"

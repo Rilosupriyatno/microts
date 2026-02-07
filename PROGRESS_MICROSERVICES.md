@@ -1,7 +1,7 @@
 # Microservices Best Practices Progress
 
 **Project:** microts  
-**Last Updated:** February 4, 2026  
+**Last Updated:** February 7, 2026  
 **Status:** ⚙️ Development - Core features working, hardening in progress
 
 ---
@@ -101,10 +101,7 @@
 
 ## ❌ NOT STARTED (8 items)
 
-### 1. Automated Testing Enhancements
-- All core testing layers implemented (Unit, Integration, E2E, Load)
-
-### 2. Database Migrations
+### 1. Database Migrations
 - No formal migration tool (e.g., Knex)
 - Schema changes are manual
 - No version control for schema
@@ -112,7 +109,7 @@
 **Effort:** 3-4 hours  
 **Priority:** HIGH (before production)
 
-### 3. Database Connection Pool Management
+### 2. Database Connection Pool Management
 - Pool settings hardcoded (10 connections)
 - No pool monitoring
 - No graceful connection draining on shutdown
@@ -120,7 +117,7 @@
 **Effort:** 1-2 hours  
 **Priority:** MEDIUM
 
-### 4. Rate Limiting Enhancements
+### 3. Rate Limiting Enhancements
 - Only per-IP (no per-user limiting)
 - No endpoint-specific limits
 - No sliding window algorithm
@@ -128,14 +125,14 @@
 **Effort:** 2-3 hours  
 **Priority:** MEDIUM
 
-### 5. Advanced Security Hardening
+### 4. Advanced Security Hardening
 - No HTTPS/TLS setup (infrastructure level)
 - No specialized rate limiting on auth endpoints (beyond global)
 
 **Effort:** 2-3 hours  
 **Priority:** MEDIUM
 
-### 6. Caching Strategy
+### 5. Caching Strategy
 - No HTTP caching headers
 - No Redis cache for frequent queries
 - No cache invalidation strategy
@@ -143,7 +140,7 @@
 **Effort:** 3-4 hours  
 **Priority:** MEDIUM
 
-### 7. Monitoring & Alerting
+### 6. Monitoring & Alerting
 - No health check integration with orchestrators
 - No metrics scraping
 - No alerts/notifications
@@ -152,7 +149,7 @@
 **Effort:** 4-5 hours  
 **Priority:** MEDIUM-HIGH
 
-### 8. Dependency Injection / Config Management
+### 7. Dependency Injection / Config Management
 - No DI container
 - Config scattered across files
 - No environment variable validation
@@ -160,7 +157,7 @@
 **Effort:** 2-3 hours  
 **Priority:** LOW (refactoring)
 
-### 9. Production Deployment Guide
+### 8. Production Deployment Guide
 - No deployment playbook
 - No rollback strategy
 - No blue-green deployment setup
@@ -176,31 +173,30 @@
 ### **Phase 1: Critical (This Week)**
 Priority: **HIGHEST** - Stabilizing foundation
 
-1. **Automated Testing Setup**
-   - Choose testing framework (recommended: Bun's built-in test runner or Jest)
-   - Add first unit tests for Auth utils
-   - Setup CI/CD pipeline skeleton
-   - Effort: ~4 hours
+1. **Automated Testing Setup** ✅ (COMPLETED)
+   - ~~Choose testing framework~~ → Bun's built-in test runner
+   - ~~Add first unit tests for Auth utils~~ → Unit, Integration, E2E tests done
+   - ~~Setup CI/CD pipeline skeleton~~ → GitHub Actions workflow ready
 
-2. **Database Migrations**
+2. **Database Migrations** ⚠️ (NOT STARTED)
    - Integrate Knex.js or similar for schema management
    - Move current manual schema to a formal migration
    - Effort: ~3 hours
 
-3. **Security Hardening** (COMPLETED)
+3. **Security Hardening** ✅ (COMPLETED)
    - Add `helmet.js` for HTTP security headers
    - Configure strict CORS origins
 
-4. **Validation & Lifecycle Testing** (COMPLETED)
+4. **Validation & Lifecycle Testing** ✅ (COMPLETED)
    - Zod validation and E2E flow tests
 
-**Total Phase 2: ~12 hours**
+**Remaining Phase 1 Effort:** ~3 hours (Database Migrations only)
 
-### **Phase 3: Nice-to-Have (Week 3+)**
+### **Phase 2: Nice-to-Have (Week 2+)**
 Priority: **MEDIUM** - Scale & Maintenance
 
 1. Database connection pool monitoring
-2. Load testing setup (k6 or Artillery)
+2. ~~Load testing setup (k6 or Artillery)~~ ✅ COMPLETED
 3. Deployment playbook (Kubernetes/Cloud)
 4. Refactoring with Dependency Injection
 
@@ -211,19 +207,51 @@ Priority: **MEDIUM** - Scale & Maintenance
 ```
 microts/
 ├── src/
-│   ├── index.ts                 # Express app, middleware setup, route definitions
+│   ├── index.ts                 # Express app, middleware setup, route mounting
 │   ├── db.ts                    # PostgreSQL pool, schema initialization with retry
-│   ├── auth.ts                  # JWT auth routes (register, login)
+│   ├── tracing.ts               # OpenTelemetry tracing setup
+│   ├── config/
+│   │   └── index.ts             # Centralized configuration (env vars)
+│   ├── routes/
+│   │   └── auth.routes.ts       # Auth route definitions with OpenAPI docs
+│   ├── controllers/
+│   │   └── auth.controller.ts   # Request/response handling
+│   ├── services/
+│   │   └── auth.service.ts      # Business logic (auth, tokens)
+│   ├── middleware/
+│   │   ├── auth.ts              # JWT authentication middleware
+│   │   ├── rateLimiter.ts       # Redis-based rate limiting
+│   │   ├── errorHandler.ts      # Centralized error handling
+│   │   ├── validate.ts          # Zod validation middleware
+│   │   ├── metrics.ts           # Prometheus metrics
+│   │   ├── swagger.ts           # OpenAPI documentation
+│   │   ├── requestId.ts         # Request ID middleware
+│   │   ├── correlationId.ts     # Correlation ID middleware
+│   │   └── timeout.ts           # Request timeout handler
 │   ├── models/
 │   │   └── user.ts              # User type, database queries
-│   └── middleware/
-│       └── rateLimiter.ts       # Redis-based rate limiting
+│   ├── schemas/
+│   │   └── user.schema.ts       # Zod validation schemas
+│   ├── utils/
+│   │   ├── auth.ts              # JWT token generation/verification
+│   │   ├── errors.ts            # Custom error classes
+│   │   ├── redis.ts             # Redis cluster connection
+│   │   └── circuitBreaker.ts    # Opossum circuit breaker
+│   └── types/                   # TypeScript interfaces
+├── tests/
+│   ├── unit/                    # Unit tests (auth, errors, redis, circuitBreaker)
+│   ├── integration/             # API integration tests
+│   └── e2e/                     # End-to-end flow tests
+├── docs/
+│   └── walkthroughs/            # Implementation documentation
 ├── docker/
 │   ├── Dockerfile.dev           # Development image with hot-reload
 │   ├── Dockerfile.prod          # Production optimized image
 │   └── compose/
 │       ├── dev.yml              # Dev stack (app, postgres, redis)
 │       └── prod.yml             # Production stack
+├── scripts/
+│   └── load-test.js             # K6 load testing script
 ├── package.json                 # Dependencies & scripts
 ├── tsconfig.json                # TypeScript configuration
 ├── .env                         # Local development config
@@ -254,11 +282,13 @@ curl http://localhost:3000/health    # Health check
 curl http://localhost:3000/ready     # Readiness check
 ```
 
-### Run Tests (once implemented):
+### Run Tests:
 ```bash
-npm run test              # Unit tests
-npm run test:integration # Integration tests
-npm run test:e2e        # End-to-end tests
+bun run test:unit         # Unit tests
+bun run test:integration  # Integration tests
+bun run test:e2e          # End-to-end tests
+bun run test:all          # All tests sequentially
+bun run test:load         # Load testing (requires k6)
 ```
 
 ### Build for Production:
@@ -281,15 +311,13 @@ podman-compose -f docker/compose/prod.yml up -d
 ✅ Secure Auth Flow (JWT Rotation + Redis)  
 
 ### What Needs Immediate Attention:
-🔴 Automated Testing  
 🔴 Database Migration Tooling  
-🔴 Security Hardening (Helmet/CORS)  
+🔴 Production Deployment Guide  
 
 ### What Can Wait:
 🟡 Advanced caching  
-🟡 Distributed tracing  
-🟡 Comprehensive metrics  
-🟡 Load testing  
+🟡 Rate limiting enhancements  
+🟡 Database connection pool monitoring  
 
 ---
 

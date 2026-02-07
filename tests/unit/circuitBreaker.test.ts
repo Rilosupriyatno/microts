@@ -1,5 +1,5 @@
 import { describe, expect, it, mock } from "bun:test";
-import { createCircuitBreaker } from "./circuitBreaker";
+import { createCircuitBreaker } from "../../src/utils/circuitBreaker";
 
 describe("CircuitBreaker Utility", () => {
     it("should create a circuit breaker for a function", async () => {

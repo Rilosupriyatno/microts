@@ -3,18 +3,18 @@ import { expect, test, describe, mock } from "bun:test";
 const mockUser = { id: 1, email: "test@example.com" };
 
 // Mocking must happen BEFORE imports
-mock.module("./db", () => ({
+mock.module("../../src/db", () => ({
     query: mock(() => Promise.resolve({ rows: [], rowCount: 0 })),
     initDb: mock(() => Promise.resolve()),
 }));
 
-mock.module("./utils/redis", () => ({
+mock.module("../../src/utils/redis", () => ({
     storeRefreshToken: mock(() => Promise.resolve()),
     getStoredRefreshToken: mock(() => Promise.resolve("mocked-token")),
     removeRefreshToken: mock(() => Promise.resolve()),
 }));
 
-mock.module("./models/user", () => ({
+mock.module("../../src/models/user", () => ({
     createUser: mock(() => Promise.resolve(mockUser)),
     getUserByEmail: mock((email: string) => {
         if (email === "existing@example.com" || email === "test@example.com") {
@@ -43,7 +43,7 @@ mock.module("bcrypt", () => ({
 }));
 
 import request from "supertest";
-import { app } from "./index";
+import { app } from "../../src/index";
 
 describe("Auth Integration Tests", () => {
     describe("POST /auth/register", () => {
